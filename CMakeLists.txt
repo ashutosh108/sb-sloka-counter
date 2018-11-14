@@ -16,7 +16,7 @@ else(MSVC)
                 -Wduplicated-branches
             )
         # GCC >= 6.0.0
-        if (NOT(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 6.0.0))
+        elseif (NOT(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 6.0.0))
             target_compile_options(rtfreadr
                 -Wmisleading-indentation
                 -Wduplicated-cond
