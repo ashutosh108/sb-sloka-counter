@@ -21,7 +21,7 @@ FILE *fpIn;
 // %%Function: main
 //
 // Main loop. Initialize and parse RTF.
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     FILE *fp;
     int ec;
@@ -136,7 +136,7 @@ int ecRtfParse(FILE *fp)
 
 int ecPushRtfState(void)
 {
-    SAVE *psaveNew = malloc(sizeof(SAVE));
+    SAVE *psaveNew = (SAVE *)malloc(sizeof(SAVE));
     if (!psaveNew)
         return ecStackOverflow;
 

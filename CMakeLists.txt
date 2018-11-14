@@ -1,3 +1,3 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(myproject LANGUAGES C)
-add_executable(rtfreadr rtf/rtfreadr.c rtf/rtfactn.c)
+project(myproject LANGUAGES CXX)
+add_executable(rtfreadr rtf/rtfreadr.cpp rtf/rtfactn.cpp)

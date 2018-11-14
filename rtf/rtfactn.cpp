@@ -217,13 +217,13 @@ int ecTranslateKeyword(char *szKeyword, int param, bool fParam)
     case kwdProp:
         if (rgsymRtf[isym].fPassDflt || !fParam)
             param = rgsymRtf[isym].dflt;
-        return ecApplyPropChange(rgsymRtf[isym].idx, param);
+        return ecApplyPropChange((IPROP)(rgsymRtf[isym].idx), param);
     case kwdChar:
         return ecParseChar(rgsymRtf[isym].idx);
     case kwdDest:
-        return ecChangeDest(rgsymRtf[isym].idx);
+        return ecChangeDest((IDEST)(rgsymRtf[isym].idx));
     case kwdSpec:
-        return ecParseSpecialKeyword(rgsymRtf[isym].idx);
+        return ecParseSpecialKeyword((IPFN)(rgsymRtf[isym].idx));
     default:
         return ecBadTable;
     }

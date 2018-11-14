@@ -1,4 +1,3 @@
-typedef char bool;
 #define fTrue 1
 #define fFalse 0
 
