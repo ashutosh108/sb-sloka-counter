@@ -1,3 +1,4 @@
+#include <cassert>
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
@@ -122,7 +123,7 @@ int isymMax = sizeof(rgsymRtf) / sizeof(SYM);
 
 int ecApplyPropChange(IPROP iprop, int val)
 {
-    char *pb;
+    char *pb = nullptr;
     if (rds == rdsSkip)                 // If we're skipping text,
         return ecOK;                    // Do not do anything.
 
@@ -151,6 +152,7 @@ int ecApplyPropChange(IPROP iprop, int val)
         pb[rgprop[iprop].offset] = (unsigned char) val;
         break;
     case actnWord:
+        assert(pb != nullptr);
         (*(int *) (pb+rgprop[iprop].offset)) = val;
         break;
     case actnSpec:
@@ -165,7 +167,7 @@ int ecApplyPropChange(IPROP iprop, int val)
 // %%Function: ecParseSpecialProperty
 // Set a property that requires code to evaluate.
 
-int ecParseSpecialProperty(IPROP iprop, int val)
+int ecParseSpecialProperty(IPROP iprop, int/* val*/)
 {
     switch (iprop)
     {
@@ -181,7 +183,6 @@ int ecParseSpecialProperty(IPROP iprop, int val)
     default:
         return ecBadTable;
     }
-    return ecBadTable;
 }
 
 // %%Function: ecTranslateKeyword
@@ -227,24 +228,18 @@ int ecTranslateKeyword(char *szKeyword, int param, bool fParam)
     default:
         return ecBadTable;
     }
-    return ecBadTable;
 }
 
 // %%Function: ecChangeDest
 // Change to the destination specified by idest.
 // There's usually more to do here than this...
 
-int ecChangeDest(IDEST idest)
+int ecChangeDest(IDEST/* idest*/)
 {
     if (rds == rdsSkip)             // if we're skipping text,
         return ecOK;                // Do not do anything
 
-    switch (idest)
-    {
-    default:
-        rds = rdsSkip;              // when in doubt, skip it...
-        break;
-    }
+    rds = rdsSkip;              // when in doubt, skip it...
     return ecOK;
 }
 
@@ -252,7 +247,7 @@ int ecChangeDest(IDEST idest)
 // The destination specified by rds is coming to a close.
 // If there’s any cleanup that needs to be done, do it now.
 
-int ecEndGroupAction(RDS rds)
+int ecEndGroupAction(RDS/* rds*/)
 {
     return ecOK;
 }

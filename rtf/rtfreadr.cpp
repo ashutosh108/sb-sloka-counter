@@ -21,7 +21,7 @@ FILE *fpIn;
 // %%Function: main
 //
 // Main loop. Initialize and parse RTF.
-int main(int argc, char *argv[])
+int main()
 {
     FILE *fp;
     int ec;

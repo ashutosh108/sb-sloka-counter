@@ -78,7 +78,7 @@ typedef enum {idestPict, idestSkip } IDEST;
 typedef enum {kwdChar, kwdDest, kwdProp, kwdSpec} KWD;
 typedef struct symbol
 {
-    char *szKeyword;        // RTF keyword
+    const char *szKeyword;  // RTF keyword
     int  dflt;              // default value to use
     bool fPassDflt;         // true to use default value from this table
     KWD  kwd;               // base action to take
