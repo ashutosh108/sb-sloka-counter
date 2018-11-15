@@ -93,20 +93,20 @@ int ecRtfParse(FILE *fp)
                         return ecAssertion;
                     b = b << 4;
                     if (isdigit(ch))
-                        b += (char) ch - '0';
+                        b += static_cast<char>(ch) - '0';
                     else
                     {
                         if (islower(ch))
                         {
                             if (ch < 'a' || ch > 'f')
                                 return ecInvalidHex;
-                            b += (char) ch - 'a' + 10;
+                            b += static_cast<char>(ch) - 'a' + 10;
                         }
                         else
                         {
                             if (ch < 'A' || ch > 'F')
                                 return ecInvalidHex;
-                            b += (char) ch - 'A' + 10;
+                            b += static_cast<char>(ch) - 'A' + 10;
                         }
                     }
                     cNibble--;
@@ -136,7 +136,7 @@ int ecRtfParse(FILE *fp)
 
 int ecPushRtfState(void)
 {
-    SAVE *psaveNew = (SAVE *)malloc(sizeof(SAVE));
+    SAVE *psaveNew = static_cast<SAVE *>(malloc(sizeof(SAVE)));
     if (!psaveNew)
         return ecStackOverflow;
 
@@ -211,12 +211,12 @@ int ecParseRtfKeyword(FILE *fp)
         return ecEndOfFile;
     if (!isalpha(ch))           // a control symbol; no delimiter.
     {
-        szKeyword[0] = (char) ch;
+        szKeyword[0] = static_cast<char>(ch);
         szKeyword[1] = '\0';
         return ecTranslateKeyword(szKeyword, 0, fParam);
     }
     for (pch = szKeyword; pch < pKeywordMax && isalpha(ch); ch = getc(fp))
-        *pch++ = (char) ch;
+        *pch++ = static_cast<char>(ch);
     if (pch >= pKeywordMax)
         return ecInvalidKeyword;	// Keyword too long
     *pch = '\0';
@@ -230,7 +230,7 @@ int ecParseRtfKeyword(FILE *fp)
     {
         fParam = fTrue;         // a digit after the control means we have a parameter
         for (pch = szParameter; pch < pParamMax && isdigit(ch); ch = getc(fp))
-            *pch++ = (char) ch;
+            *pch++ = static_cast<char>(ch);
         if (pch >= pParamMax)
             return ecInvalidParam;	// Parameter too long
         *pch = '\0';

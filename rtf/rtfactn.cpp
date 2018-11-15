@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstddef>
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
@@ -74,8 +75,8 @@ SYM rgsymRtf[] = {
     "\0x0a",    0,      fFalse,     kwdChar,    0x0a,
     "\0x0d",    0,      fFalse,     kwdChar,    0x0a,
     "tab",      0,      fFalse,     kwdChar,    0x09,
-    "ldblquote",0,      fFalse,     kwdChar,    '“',
-    "rdblquote",0,      fFalse,     kwdChar,    '”',
+    "ldblquote",0,      fFalse,     kwdChar,    0x201c,
+    "rdblquote",0,      fFalse,     kwdChar,    0x201d,
     "bin",      0,      fFalse,     kwdSpec,    ipfnBin,
     "*",        0,      fFalse,     kwdSpec,    ipfnSkipDest,
     "'",        0,      fFalse,     kwdSpec,    ipfnHex,
@@ -116,30 +117,30 @@ SYM rgsymRtf[] = {
     "}",        0,      fFalse,     kwdChar,    '}',
     "\\",       0,      fFalse,     kwdChar,    '\\'
     };
-int isymMax = sizeof(rgsymRtf) / sizeof(SYM);
+std::size_t isymMax = sizeof(rgsymRtf) / sizeof(SYM);
 
 // %%Function: ecApplyPropChange
 // Set the property identified by _iprop_ to the value _val_.
 
 int ecApplyPropChange(IPROP iprop, int val)
 {
-    char *pb = nullptr;
+    unsigned char *pb = nullptr;
     if (rds == rdsSkip)                 // If we're skipping text,
         return ecOK;                    // Do not do anything.
 
     switch (rgprop[iprop].prop)
     {
     case propDop:
-        pb = (char *)&dop;
+        pb = reinterpret_cast<unsigned char *>(&dop);
         break;
     case propSep:
-        pb = (char *)&sep;
+        pb = reinterpret_cast<unsigned char *>(&sep);
         break;
     case propPap:
-        pb = (char *)&pap;
+        pb = reinterpret_cast<unsigned char *>(&pap);
         break;
     case propChp:
-        pb = (char *)&chp;
+        pb = reinterpret_cast<unsigned char *>(&chp);
         break;
     default:
         if (rgprop[iprop].actn != actnSpec)
@@ -149,11 +150,11 @@ int ecApplyPropChange(IPROP iprop, int val)
     switch (rgprop[iprop].actn)
     {
     case actnByte:
-        pb[rgprop[iprop].offset] = (unsigned char) val;
+        pb[rgprop[iprop].offset] = static_cast<unsigned char>(val);
         break;
     case actnWord:
         assert(pb != nullptr);
-        (*(int *) (pb+rgprop[iprop].offset)) = val;
+        (*reinterpret_cast<int *>(pb+rgprop[iprop].offset)) = val;
         break;
     case actnSpec:
         return ecParseSpecialProperty(iprop, val);
@@ -196,7 +197,7 @@ int ecParseSpecialProperty(IPROP iprop, int/* val*/)
 
 int ecTranslateKeyword(char *szKeyword, int param, bool fParam)
 {
-    int isym;
+    std::size_t isym;
 
     // search for szKeyword in rgsymRtf
     for (isym = 0; isym < isymMax; isym++)
@@ -218,13 +219,13 @@ int ecTranslateKeyword(char *szKeyword, int param, bool fParam)
     case kwdProp:
         if (rgsymRtf[isym].fPassDflt || !fParam)
             param = rgsymRtf[isym].dflt;
-        return ecApplyPropChange((IPROP)(rgsymRtf[isym].idx), param);
+        return ecApplyPropChange(static_cast<IPROP>(rgsymRtf[isym].idx), param);
     case kwdChar:
         return ecParseChar(rgsymRtf[isym].idx);
     case kwdDest:
-        return ecChangeDest((IDEST)(rgsymRtf[isym].idx));
+        return ecChangeDest(static_cast<IDEST>(rgsymRtf[isym].idx));
     case kwdSpec:
-        return ecParseSpecialKeyword((IPFN)(rgsymRtf[isym].idx));
+        return ecParseSpecialKeyword(static_cast<IPFN>(rgsymRtf[isym].idx));
     default:
         return ecBadTable;
     }
