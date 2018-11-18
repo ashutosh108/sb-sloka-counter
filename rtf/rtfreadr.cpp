@@ -93,32 +93,32 @@ typedef struct symbol
 
 enum class Status {
 // RTF parser error codes
-    ecOK              = 0,      // Everything's fine!
-    ecStackUnderflow  = 1,      // Unmatched '}'
-    ecStackOverflow   = 2,      // Too many '{' – memory exhausted
-    ecUnmatchedBrace  = 3,      // RTF ended during an open group.
-    ecInvalidHex      = 4,      // invalid hex character found in data
-    ecBadTable        = 5,      // RTF table (sym or prop) not valid
-    ecAssertion       = 6,      // Assertion failure
-    ecEndOfFile       = 7,      // End of file reached while reading RTF
-    ecInvalidKeyword  = 8,      // Invalid keyword
-    ecInvalidParam    = 9       // Invalid parameter
+    OK              = 0,      // Everything's fine!
+    StackUnderflow  = 1,      // Unmatched '}'
+    StackOverflow   = 2,      // Too many '{' – memory exhausted
+    UnmatchedBrace  = 3,      // RTF ended during an open group.
+    InvalidHex      = 4,      // invalid hex character found in data
+    BadTable        = 5,      // RTF table (sym or prop) not valid
+    Assertion       = 6,      // Assertion failure
+    EndOfFile       = 7,      // End of file reached while reading RTF
+    InvalidKeyword  = 8,      // Invalid keyword
+    InvalidParam    = 9       // Invalid parameter
 };
 
 // RTF parser declarations
-Status ecRtfParse(FILE *fp);
-Status ecPushRtfState(void);
-Status ecPopRtfState(void);
-Status ecParseRtfKeyword(FILE *fp);
-Status ecParseChar(int c);
-Status ecTranslateKeyword(char *szKeyword, int param, bool fParam);
-Status ecPrintChar(int ch);
-Status ecEndGroupAction(RDS rds);
-Status ecApplyPropChange(IPROP iprop, int val);
-Status ecChangeDest(IDEST idest);
-Status ecParseSpecialKeyword(IPFN ipfn);
-Status ecParseSpecialProperty(IPROP iprop, int val);
-Status ecParseHexByte(void);
+Status RtfParse(FILE *fp);
+Status PushRtfState(void);
+Status PopRtfState(void);
+Status ParseRtfKeyword(FILE *fp);
+Status ParseChar(int c);
+Status TranslateKeyword(char *szKeyword, int param, bool fParam);
+Status PrintChar(int ch);
+Status EndGroupAction(RDS rds);
+Status ApplyPropChange(IPROP iprop, int val);
+Status ChangeDest(IDEST idest);
+Status ParseSpecialKeyword(IPFN ipfn);
+Status ParseSpecialProperty(IPROP iprop, int val);
+Status ParseHexByte(void);
 
 int cGroup;
 bool fSkipDestIfUnk;
@@ -147,7 +147,7 @@ int main()
         printf ("Can't open test file!\n");
         return 1;
     }
-    if ((ec = ecRtfParse(fp)) != Status::ecOK)
+    if ((ec = RtfParse(fp)) != Status::OK)
         printf("error %d parsing rtf\n", ec);
     else
         printf("Parsed RTF file OK\n");
@@ -155,14 +155,14 @@ int main()
     return 0;
 }
 
-// %%Function: ecRtfParse
+// %%Function: RtfParse
 //
 // Step 1:
-// Isolate RTF keywords and send them to ecParseRtfKeyword;
+// Isolate RTF keywords and send them to ParseRtfKeyword;
 // Push and pop state at the start and end of RTF groups;
-// Send text to ecParseChar for further processing.
+// Send text to ParseChar for further processing.
 
-Status ecRtfParse(FILE *fp)
+Status RtfParse(FILE *fp)
 {
     int ch;
     Status ec;
@@ -171,10 +171,10 @@ Status ecRtfParse(FILE *fp)
     while ((ch = getc(fp)) != EOF)
     {
         if (cGroup < 0)
-            return Status::ecStackUnderflow;
+            return Status::StackUnderflow;
         if (ris == risBin)                      // if we’re parsing binary data, handle it directly
         {
-            if ((ec = ecParseChar(ch)) != Status::ecOK)
+            if ((ec = ParseChar(ch)) != Status::OK)
                 return ec;
         }
         else
@@ -182,15 +182,15 @@ Status ecRtfParse(FILE *fp)
             switch (ch)
             {
             case '{':
-                if ((ec = ecPushRtfState()) != Status::ecOK)
+                if ((ec = PushRtfState()) != Status::OK)
                     return ec;
                 break;
             case '}':
-                if ((ec = ecPopRtfState()) != Status::ecOK)
+                if ((ec = PopRtfState()) != Status::OK)
                     return ec;
                 break;
             case '\\':
-                if ((ec = ecParseRtfKeyword(fp)) != Status::ecOK)
+                if ((ec = ParseRtfKeyword(fp)) != Status::OK)
                     return ec;
                 break;
             case 0x0d:
@@ -199,13 +199,13 @@ Status ecRtfParse(FILE *fp)
             default:
                 if (ris == risNorm)
                 {
-                    if ((ec = ecParseChar(ch)) != Status::ecOK)
+                    if ((ec = ParseChar(ch)) != Status::OK)
                         return ec;
                 }
                 else
                 {               // parsing hex data
                     if (ris != risHex)
-                        return Status::ecAssertion;
+                        return Status::Assertion;
                     b = b << 4;
                     if (isdigit(ch))
                         b += static_cast<char>(ch) - '0';
@@ -214,20 +214,20 @@ Status ecRtfParse(FILE *fp)
                         if (islower(ch))
                         {
                             if (ch < 'a' || ch > 'f')
-                                return Status::ecInvalidHex;
+                                return Status::InvalidHex;
                             b += static_cast<char>(ch) - 'a' + 10;
                         }
                         else
                         {
                             if (ch < 'A' || ch > 'F')
-                                return Status::ecInvalidHex;
+                                return Status::InvalidHex;
                             b += static_cast<char>(ch) - 'A' + 10;
                         }
                     }
                     cNibble--;
                     if (!cNibble)
                     {
-                        if ((ec = ecParseChar(b)) != Status::ecOK)
+                        if ((ec = ParseChar(b)) != Status::OK)
                             return ec;
                         cNibble = 2;
                         b = 0;
@@ -239,21 +239,21 @@ Status ecRtfParse(FILE *fp)
         }           // else (ris != risBin)
     }               // while
     if (cGroup < 0)
-        return Status::ecStackUnderflow;
+        return Status::StackUnderflow;
     if (cGroup > 0)
-        return Status::ecUnmatchedBrace;
-    return Status::ecOK;
+        return Status::UnmatchedBrace;
+    return Status::OK;
 }
 
-// %%Function: ecPushRtfState
+// %%Function: PushRtfState
 //
 // Save relevant info on a linked list of SAVE structures.
 
-Status ecPushRtfState(void)
+Status PushRtfState(void)
 {
     SAVE *psaveNew = static_cast<SAVE *>(malloc(sizeof(SAVE)));
     if (!psaveNew)
-        return Status::ecStackOverflow;
+        return Status::StackOverflow;
 
     psaveNew -> pNext = psave;
     psaveNew -> chp = chp;
@@ -265,26 +265,26 @@ Status ecPushRtfState(void)
     ris = risNorm;
     psave = psaveNew;
     cGroup++;
-    return Status::ecOK;
+    return Status::OK;
 }
 
-// %%Function: ecPopRtfState
+// %%Function: PopRtfState
 //
 // If we're ending a destination (that is, the destination is changing),
-// call ecEndGroupAction.
+// call EndGroupAction.
 // Always restore relevant info from the top of the SAVE list.
 
-Status ecPopRtfState(void)
+Status PopRtfState(void)
 {
     SAVE *psaveOld;
     Status ec;
 
     if (!psave)
-        return Status::ecStackUnderflow;
+        return Status::StackUnderflow;
 
     if (rds != psave->rds)
     {
-        if ((ec = ecEndGroupAction(rds)) != Status::ecOK)
+        if ((ec = EndGroupAction(rds)) != Status::OK)
             return ec;
     }
     chp = psave->chp;
@@ -298,16 +298,16 @@ Status ecPopRtfState(void)
     psave = psave->pNext;
     cGroup--;
     free(psaveOld);
-    return Status::ecOK;
+    return Status::OK;
 }
 
-// %%Function: ecParseRtfKeyword
+// %%Function: ParseRtfKeyword
 //
 // Step 2:
 // get a control word (and its associated value) and
-// call ecTranslateKeyword to dispatch the control.
+// call TranslateKeyword to dispatch the control.
 
-Status ecParseRtfKeyword(FILE *fp)
+Status ParseRtfKeyword(FILE *fp)
 {
     int ch;
     char fParam = false;
@@ -323,23 +323,23 @@ Status ecParseRtfKeyword(FILE *fp)
     szKeyword[0] = '\0';
     szParameter[0] = '\0';
     if ((ch = getc(fp)) == EOF)
-        return Status::ecEndOfFile;
+        return Status::EndOfFile;
     if (!isalpha(ch))           // a control symbol; no delimiter.
     {
         szKeyword[0] = static_cast<char>(ch);
         szKeyword[1] = '\0';
-        return ecTranslateKeyword(szKeyword, 0, fParam);
+        return TranslateKeyword(szKeyword, 0, fParam);
     }
     for (pch = szKeyword; pch < pKeywordMax && isalpha(ch); ch = getc(fp))
         *pch++ = static_cast<char>(ch);
     if (pch >= pKeywordMax)
-        return Status::ecInvalidKeyword;	// Keyword too long
+        return Status::InvalidKeyword;	// Keyword too long
     *pch = '\0';
     if (ch == '-')
     {
         fNeg  = true;
         if ((ch = getc(fp)) == EOF)
-            return Status::ecEndOfFile;
+            return Status::EndOfFile;
     }
     if (isdigit(ch))
     {
@@ -347,7 +347,7 @@ Status ecParseRtfKeyword(FILE *fp)
         for (pch = szParameter; pch < pParamMax && isdigit(ch); ch = getc(fp))
             *pch++ = static_cast<char>(ch);
         if (pch >= pParamMax)
-            return Status::ecInvalidParam;	// Parameter too long
+            return Status::InvalidParam;	// Parameter too long
         *pch = '\0';
         param = atoi(szParameter);
         if (fNeg)
@@ -356,14 +356,14 @@ Status ecParseRtfKeyword(FILE *fp)
     }
     if (ch != ' ')
         ungetc(ch, fp);
-    return ecTranslateKeyword(szKeyword, param, fParam);
+    return TranslateKeyword(szKeyword, param, fParam);
 }
 
-// %%Function: ecParseChar
+// %%Function: ParseChar
 //
 // Route the character to the appropriate destination stream.
 
-Status ecParseChar(int ch)
+Status ParseChar(int ch)
 {
     if (ris == risBin && --cbBin <= 0)
         ris = risNorm;
@@ -371,25 +371,25 @@ Status ecParseChar(int ch)
     {
     case rdsSkip:
         // Toss this character.
-        return Status::ecOK;
+        return Status::OK;
     case rdsNorm:
         // Output a character. Properties are valid at this point.
-        return ecPrintChar(ch);
+        return PrintChar(ch);
     default:
     // handle other destinations....
-        return Status::ecOK;
+        return Status::OK;
     }
 }
 //
-// %%Function: ecPrintChar
+// %%Function: PrintChar
 //
 // Send a character to the output file.
 
-Status ecPrintChar(int ch)
+Status PrintChar(int ch)
 {
     // unfortunately, we do not do a whole lot here as far as layout goes...
     putchar(ch);
-    return Status::ecOK;
+    return Status::OK;
 }
 
 // RTF parser tables
@@ -504,14 +504,14 @@ SYM rgsymRtf[] = {
     };
 std::size_t isymMax = sizeof(rgsymRtf) / sizeof(SYM);
 
-// %%Function: ecApplyPropChange
+// %%Function: ApplyPropChange
 // Set the property identified by _iprop_ to the value _val_.
 
-Status ecApplyPropChange(IPROP iprop, int val)
+Status ApplyPropChange(IPROP iprop, int val)
 {
     unsigned char *pb = nullptr;
     if (rds == rdsSkip)                 // If we're skipping text,
-        return Status::ecOK;                    // Do not do anything.
+        return Status::OK;              // Do not do anything.
 
     switch (rgprop[iprop].prop)
     {
@@ -529,7 +529,7 @@ Status ecApplyPropChange(IPROP iprop, int val)
         break;
     default:
         if (rgprop[iprop].actn != actnSpec)
-            return Status::ecBadTable;
+            return Status::BadTable;
         break;
     }
     switch (rgprop[iprop].actn)
@@ -542,36 +542,36 @@ Status ecApplyPropChange(IPROP iprop, int val)
         (*reinterpret_cast<int *>(pb+rgprop[iprop].offset)) = val;
         break;
     case actnSpec:
-        return ecParseSpecialProperty(iprop, val);
+        return ParseSpecialProperty(iprop, val);
         break;
     default:
-        return Status::ecBadTable;
+        return Status::BadTable;
     }
-    return Status::ecOK;
+    return Status::OK;
 }
 
-// %%Function: ecParseSpecialProperty
+// %%Function: ParseSpecialProperty
 // Set a property that requires code to evaluate.
 
-Status ecParseSpecialProperty(IPROP iprop, int/* val*/)
+Status ParseSpecialProperty(IPROP iprop, int/* val*/)
 {
     switch (iprop)
     {
     case ipropPard:
         memset(&pap, 0, sizeof(pap));
-        return Status::ecOK;
+        return Status::OK;
     case ipropPlain:
         memset(&chp, 0, sizeof(chp));
-        return Status::ecOK;
+        return Status::OK;
     case ipropSectd:
         memset(&sep, 0, sizeof(sep));
-        return Status::ecOK;
+        return Status::OK;
     default:
-        return Status::ecBadTable;
+        return Status::BadTable;
     }
 }
 
-// %%Function: ecTranslateKeyword
+// %%Function: TranslateKeyword
 // Step 3.
 // Search rgsymRtf for szKeyword and evaluate it appropriately.
 // Inputs:
@@ -580,7 +580,7 @@ Status ecParseSpecialProperty(IPROP iprop, int/* val*/)
 // fParam:      true if the control had a parameter; (that is, if param is valid)
 //              false if it did not.
 
-Status ecTranslateKeyword(char *szKeyword, int param, bool fParam)
+Status TranslateKeyword(char *szKeyword, int param, bool fParam)
 {
     std::size_t isym;
 
@@ -594,7 +594,7 @@ Status ecTranslateKeyword(char *szKeyword, int param, bool fParam)
             rds = rdsSkip;          // skip the destination
                                     // else just discard it
         fSkipDestIfUnk = false;
-        return Status::ecOK;
+        return Status::OK;
     }
 
     // found it!  Use kwd and idx to determine what to do with it.
@@ -604,47 +604,47 @@ Status ecTranslateKeyword(char *szKeyword, int param, bool fParam)
     case kwdProp:
         if (rgsymRtf[isym].fPassDflt || !fParam)
             param = rgsymRtf[isym].dflt;
-        return ecApplyPropChange(static_cast<IPROP>(rgsymRtf[isym].idx), param);
+        return ApplyPropChange(static_cast<IPROP>(rgsymRtf[isym].idx), param);
     case kwdChar:
-        return ecParseChar(rgsymRtf[isym].idx);
+        return ParseChar(rgsymRtf[isym].idx);
     case kwdDest:
-        return ecChangeDest(static_cast<IDEST>(rgsymRtf[isym].idx));
+        return ChangeDest(static_cast<IDEST>(rgsymRtf[isym].idx));
     case kwdSpec:
-        return ecParseSpecialKeyword(static_cast<IPFN>(rgsymRtf[isym].idx));
+        return ParseSpecialKeyword(static_cast<IPFN>(rgsymRtf[isym].idx));
     default:
-        return Status::ecBadTable;
+        return Status::BadTable;
     }
 }
 
-// %%Function: ecChangeDest
+// %%Function: ChangeDest
 // Change to the destination specified by idest.
 // There's usually more to do here than this...
 
-Status ecChangeDest(IDEST/* idest*/)
+Status ChangeDest(IDEST/* idest*/)
 {
     if (rds == rdsSkip)             // if we're skipping text,
-        return Status::ecOK;                // Do not do anything
+        return Status::OK;                // Do not do anything
 
     rds = rdsSkip;              // when in doubt, skip it...
-    return Status::ecOK;
+    return Status::OK;
 }
 
-// %%Function: ecEndGroupAction
+// %%Function: EndGroupAction
 // The destination specified by rds is coming to a close.
 // If there’s any cleanup that needs to be done, do it now.
 
-Status ecEndGroupAction(RDS/* rds*/)
+Status EndGroupAction(RDS/* rds*/)
 {
-    return Status::ecOK;
+    return Status::OK;
 }
 
-// %%Function: ecParseSpecialKeyword
+// %%Function: ParseSpecialKeyword
 // Evaluate an RTF control that needs special processing.
 
-Status ecParseSpecialKeyword(IPFN ipfn)
+Status ParseSpecialKeyword(IPFN ipfn)
 {
     if (rds == rdsSkip && ipfn != ipfnBin)  // if we're skipping, and it is not
-        return Status::ecOK;                        // the \bin keyword, ignore it.
+        return Status::OK;                          // the \bin keyword, ignore it.
     switch (ipfn)
     {
     case ipfnBin:
@@ -658,7 +658,7 @@ Status ecParseSpecialKeyword(IPFN ipfn)
         ris = risHex;
         break;
     default:
-        return Status::ecBadTable;
+        return Status::BadTable;
     }
-    return Status::ecOK;
+    return Status::OK;
 }
