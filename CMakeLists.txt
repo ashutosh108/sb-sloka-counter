@@ -7,7 +7,7 @@ else()
   set(CMAKE_CXX_STANDARD 11)
 endif()
 project(myproject CXX)
-add_executable(rtfreadr rtf/rtfreadr.cpp rtf/rtfactn.cpp)
+add_executable(rtfreadr rtf/rtfreadr.cpp)
 if(MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS) # for fopen()
     target_compile_options(rtfreadr PRIVATE /permissive- /W4 /w14640
