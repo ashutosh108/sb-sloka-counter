@@ -132,7 +132,6 @@ PAP pap;
 SEP sep;
 DOP dop;
 SAVE *psave;
-FILE *fpIn;
 
 // %%Function: main
 //
@@ -142,7 +141,7 @@ int main()
     FILE *fp;
     Status ec;
 
-    fp = fpIn = fopen("test.rtf", "r");
+    fp = fopen("test.rtf", "r");
     if (!fp)
     {
         printf ("Can't open test file!\n");
