@@ -28,6 +28,114 @@ public:
     // Push and pop state at the start and end of RTF groups;
     // Send text to ParseChar for further processing.
     static Status RtfParse(FILE *fp);
+
+    typedef enum { rdsNorm, rdsSkip } RDS;              // Rtf Destination State
+    // What types of properties are there?
+    typedef enum {ipropBold, ipropItalic, ipropUnderline, ipropLeftInd,
+                  ipropRightInd, ipropFirstInd, ipropCols, ipropPgnX,
+                  ipropPgnY, ipropXaPage, ipropYaPage, ipropXaLeft,
+                  ipropXaRight, ipropYaTop, ipropYaBottom, ipropPgnStart,
+                  ipropSbk, ipropPgnFormat, ipropFacingp, ipropLandscape,
+                  ipropJust, ipropPard, ipropPlain, ipropSectd,
+                  ipropMax } IPROP;
+
+    typedef enum {ipfnBin, ipfnHex, ipfnSkipDest } IPFN;
+    typedef enum {idestPict, idestSkip } IDEST;
+
+    typedef struct char_prop
+    {
+        char fBold;
+        char fUnderline;
+        char fItalic;
+    } CHP;                  // Character Properties
+
+    typedef enum {justL, justR, justC, justF } JUST;
+    typedef struct para_prop
+    {
+        int xaLeft;                 // left indent in twips
+        int xaRight;                // right indent in twips
+        int xaFirst;                // first line indent in twips
+        JUST just;                  // justification
+    } PAP;                  // Paragraph Properties
+
+    typedef enum {sbkNon, sbkCol, sbkEvn, sbkOdd, sbkPg} SBK;
+    typedef enum {pgDec, pgURom, pgLRom, pgULtr, pgLLtr} PGN;
+    typedef struct sect_prop
+    {
+        int cCols;                  // number of columns
+        SBK sbk;                    // section break type
+        int xaPgn;                  // x position of page number in twips
+        int yaPgn;                  // y position of page number in twips
+        PGN pgnFormat;              // how the page number is formatted
+    } SEP;                  // Section Properties
+    typedef struct doc_prop
+    {
+        int xaPage;                 // page width in twips
+        int yaPage;                 // page height in twips
+        int xaLeft;                 // left margin in twips
+        int yaTop;                  // top margin in twips
+        int xaRight;                // right margin in twips
+        int yaBottom;               // bottom margin in twips
+        int pgnStart;               // starting page number in twips
+        char fFacingp;              // facing pages enabled?
+        char fLandscape;            // landscape or portrait?
+    } DOP;                  // Document Properties
+
+    typedef enum { risNorm, risBin, risHex } RIS;       // Rtf Internal State
+
+    typedef struct save             // property save structure
+    {
+        struct save *pNext;         // next save
+        CHP chp;
+        PAP pap;
+        SEP sep;
+        DOP dop;
+        RDS rds;
+        RIS ris;
+    } SAVE;
+
+    typedef enum {actnSpec, actnByte, actnWord} ACTN;
+    typedef enum {propChp, propPap, propSep, propDop} PROPTYPE;
+
+    typedef struct propmod
+    {
+        ACTN actn;              // size of value
+        PROPTYPE prop;          // structure containing value
+        int  offset;            // offset of value from base of structure
+    } PROP;
+
+    typedef enum {kwdChar, kwdDest, kwdProp, kwdSpec} KWD;
+    typedef struct symbol
+    {
+        const char *szKeyword;  // RTF keyword
+        int  dflt;              // default value to use
+        bool fPassDflt;         // true to use default value from this table
+        KWD  kwd;               // base action to take
+        int  idx;               // index into property table if kwd == kwdProp
+                                // index into destination table if kwd == kwdDest
+                                // character to print if kwd == kwdChar
+    } SYM;
+
+    // RTF parser tables
+    // Property descriptions
+    static const RtfParser::PROP rgprop [RtfParser::ipropMax];
+
+    // Keyword descriptions
+    static const RtfParser::SYM rgsymRtf[];
+    static std::size_t isymMax;
+
+    static Status PushRtfState(void);
+    static Status PopRtfState(void);
+    static Status ParseRtfKeyword(FILE *fp);
+    static Status ParseChar(int c);
+    static Status TranslateKeyword(char *szKeyword, int param, bool fParam);
+    static Status PrintChar(int ch);
+    static Status EndGroupAction(RDS rds);
+    static Status ApplyPropChange(IPROP iprop, int val);
+    static Status ChangeDest(IDEST idest);
+    static Status ParseSpecialKeyword(IPFN ipfn);
+    static Status ParseSpecialProperty(IPROP iprop, int val);
+    static Status ParseHexByte(void);
 };
 
 // %%Function: main
@@ -52,118 +160,18 @@ int main()
     return 0;
 }
 
-typedef struct char_prop
-{
-    char fBold;
-    char fUnderline;
-    char fItalic;
-} CHP;                  // Character Properties
-
-typedef enum {justL, justR, justC, justF } JUST;
-typedef struct para_prop
-{
-    int xaLeft;                 // left indent in twips
-    int xaRight;                // right indent in twips
-    int xaFirst;                // first line indent in twips
-    JUST just;                  // justification
-} PAP;                  // Paragraph Properties
-
-typedef enum {sbkNon, sbkCol, sbkEvn, sbkOdd, sbkPg} SBK;
-typedef enum {pgDec, pgURom, pgLRom, pgULtr, pgLLtr} PGN;
-typedef struct sect_prop
-{
-    int cCols;                  // number of columns
-    SBK sbk;                    // section break type
-    int xaPgn;                  // x position of page number in twips
-    int yaPgn;                  // y position of page number in twips
-    PGN pgnFormat;              // how the page number is formatted
-} SEP;                  // Section Properties
-typedef struct doc_prop
-{
-    int xaPage;                 // page width in twips
-    int yaPage;                 // page height in twips
-    int xaLeft;                 // left margin in twips
-    int yaTop;                  // top margin in twips
-    int xaRight;                // right margin in twips
-    int yaBottom;               // bottom margin in twips
-    int pgnStart;               // starting page number in twips
-    char fFacingp;              // facing pages enabled?
-    char fLandscape;            // landscape or portrait?
-} DOP;                  // Document Properties
-
-typedef enum { rdsNorm, rdsSkip } RDS;              // Rtf Destination State
-typedef enum { risNorm, risBin, risHex } RIS;       // Rtf Internal State
-
-typedef struct save             // property save structure
-{
-    struct save *pNext;         // next save
-    CHP chp;
-    PAP pap;
-    SEP sep;
-    DOP dop;
-    RDS rds;
-    RIS ris;
-} SAVE;
-
-// What types of properties are there?
-typedef enum {ipropBold, ipropItalic, ipropUnderline, ipropLeftInd,
-              ipropRightInd, ipropFirstInd, ipropCols, ipropPgnX,
-              ipropPgnY, ipropXaPage, ipropYaPage, ipropXaLeft,
-              ipropXaRight, ipropYaTop, ipropYaBottom, ipropPgnStart,
-              ipropSbk, ipropPgnFormat, ipropFacingp, ipropLandscape,
-              ipropJust, ipropPard, ipropPlain, ipropSectd,
-              ipropMax } IPROP;
-
-typedef enum {actnSpec, actnByte, actnWord} ACTN;
-typedef enum {propChp, propPap, propSep, propDop} PROPTYPE;
-
-typedef struct propmod
-{
-    ACTN actn;              // size of value
-    PROPTYPE prop;          // structure containing value
-    int  offset;            // offset of value from base of structure
-} PROP;
-
-typedef enum {ipfnBin, ipfnHex, ipfnSkipDest } IPFN;
-typedef enum {idestPict, idestSkip } IDEST;
-typedef enum {kwdChar, kwdDest, kwdProp, kwdSpec} KWD;
-typedef struct symbol
-{
-    const char *szKeyword;  // RTF keyword
-    int  dflt;              // default value to use
-    bool fPassDflt;         // true to use default value from this table
-    KWD  kwd;               // base action to take
-    int  idx;               // index into property table if kwd == kwdProp
-                            // index into destination table if kwd == kwdDest
-                            // character to print if kwd == kwdChar
-} SYM;
-
-// RTF parser declarations
-Status PushRtfState(void);
-Status PopRtfState(void);
-Status ParseRtfKeyword(FILE *fp);
-Status ParseChar(int c);
-Status TranslateKeyword(char *szKeyword, int param, bool fParam);
-Status PrintChar(int ch);
-Status EndGroupAction(RDS rds);
-Status ApplyPropChange(IPROP iprop, int val);
-Status ChangeDest(IDEST idest);
-Status ParseSpecialKeyword(IPFN ipfn);
-Status ParseSpecialProperty(IPROP iprop, int val);
-Status ParseHexByte(void);
-
 int cGroup;
 bool fSkipDestIfUnk;
 long cbBin;
 long lParam;
-RDS rds;
-RIS ris;
+RtfParser::RDS rds;
+RtfParser::RIS ris;
 
-CHP chp;
-PAP pap;
-SEP sep;
-DOP dop;
-SAVE *psave;
+RtfParser::CHP chp;
+RtfParser::PAP pap;
+RtfParser::SEP sep;
+RtfParser::DOP dop;
+RtfParser::SAVE *psave;
 
 Status RtfParser::RtfParse(FILE *fp)
 {
@@ -252,7 +260,7 @@ Status RtfParser::RtfParse(FILE *fp)
 //
 // Save relevant info on a linked list of SAVE structures.
 
-Status PushRtfState(void)
+Status RtfParser::PushRtfState(void)
 {
     SAVE *psaveNew = static_cast<SAVE *>(malloc(sizeof(SAVE)));
     if (!psaveNew)
@@ -277,7 +285,7 @@ Status PushRtfState(void)
 // call EndGroupAction.
 // Always restore relevant info from the top of the SAVE list.
 
-Status PopRtfState(void)
+Status RtfParser::PopRtfState(void)
 {
     SAVE *psaveOld;
     Status ec;
@@ -310,7 +318,7 @@ Status PopRtfState(void)
 // get a control word (and its associated value) and
 // call TranslateKeyword to dispatch the control.
 
-Status ParseRtfKeyword(FILE *fp)
+Status RtfParser::ParseRtfKeyword(FILE *fp)
 {
     int ch;
     char fParam = false;
@@ -366,7 +374,7 @@ Status ParseRtfKeyword(FILE *fp)
 //
 // Route the character to the appropriate destination stream.
 
-Status ParseChar(int ch)
+Status RtfParser::ParseChar(int ch)
 {
     if (ris == risBin && --cbBin <= 0)
         ris = risNorm;
@@ -383,21 +391,20 @@ Status ParseChar(int ch)
         return Status::OK;
     }
 }
+
 //
 // %%Function: PrintChar
 //
 // Send a character to the output file.
 
-Status PrintChar(int ch)
+Status RtfParser::PrintChar(int ch)
 {
     // unfortunately, we do not do a whole lot here as far as layout goes...
     putchar(ch);
     return Status::OK;
 }
 
-// RTF parser tables
-// Property descriptions
-PROP rgprop [ipropMax] = {
+const RtfParser::PROP RtfParser::rgprop [RtfParser::ipropMax] = {
     actnByte,   propChp,    offsetof(CHP, fBold),       // ipropBold
     actnByte,   propChp,    offsetof(CHP, fItalic),     // ipropItalic
     actnByte,   propChp,    offsetof(CHP, fUnderline),  // ipropUnderline
@@ -424,8 +431,7 @@ PROP rgprop [ipropMax] = {
     actnSpec,   propSep,    0,                          // ipropSectd
 };
 
-// Keyword descriptions
-SYM rgsymRtf[] = {
+const RtfParser::SYM RtfParser::rgsymRtf[] = {
 //  keyword     dflt    fPassDflt  kwd         idx
     "b",        1,      false,     kwdProp,    ipropBold,
     "u",        1,      false,     kwdProp,    ipropUnderline,
@@ -504,13 +510,14 @@ SYM rgsymRtf[] = {
     "{",        0,      false,     kwdChar,    '{',
     "}",        0,      false,     kwdChar,    '}',
     "\\",       0,      false,     kwdChar,    '\\'
-    };
-std::size_t isymMax = sizeof(rgsymRtf) / sizeof(SYM);
+};
+
+std::size_t RtfParser::isymMax = sizeof(rgsymRtf) / sizeof(RtfParser::SYM);
 
 // %%Function: ApplyPropChange
 // Set the property identified by _iprop_ to the value _val_.
 
-Status ApplyPropChange(IPROP iprop, int val)
+Status RtfParser::ApplyPropChange(IPROP iprop, int val)
 {
     unsigned char *pb = nullptr;
     if (rds == rdsSkip)                 // If we're skipping text,
@@ -556,7 +563,7 @@ Status ApplyPropChange(IPROP iprop, int val)
 // %%Function: ParseSpecialProperty
 // Set a property that requires code to evaluate.
 
-Status ParseSpecialProperty(IPROP iprop, int/* val*/)
+Status RtfParser::ParseSpecialProperty(IPROP iprop, int/* val*/)
 {
     switch (iprop)
     {
@@ -583,7 +590,7 @@ Status ParseSpecialProperty(IPROP iprop, int/* val*/)
 // fParam:      true if the control had a parameter; (that is, if param is valid)
 //              false if it did not.
 
-Status TranslateKeyword(char *szKeyword, int param, bool fParam)
+Status RtfParser::TranslateKeyword(char *szKeyword, int param, bool fParam)
 {
     std::size_t isym;
 
@@ -623,7 +630,7 @@ Status TranslateKeyword(char *szKeyword, int param, bool fParam)
 // Change to the destination specified by idest.
 // There's usually more to do here than this...
 
-Status ChangeDest(IDEST/* idest*/)
+Status RtfParser::ChangeDest(IDEST/* idest*/)
 {
     if (rds == rdsSkip)             // if we're skipping text,
         return Status::OK;                // Do not do anything
@@ -636,7 +643,7 @@ Status ChangeDest(IDEST/* idest*/)
 // The destination specified by rds is coming to a close.
 // If there’s any cleanup that needs to be done, do it now.
 
-Status EndGroupAction(RDS/* rds*/)
+Status RtfParser::EndGroupAction(RDS/* rds*/)
 {
     return Status::OK;
 }
@@ -644,7 +651,7 @@ Status EndGroupAction(RDS/* rds*/)
 // %%Function: ParseSpecialKeyword
 // Evaluate an RTF control that needs special processing.
 
-Status ParseSpecialKeyword(IPFN ipfn)
+Status RtfParser::ParseSpecialKeyword(IPFN ipfn)
 {
     if (rds == rdsSkip && ipfn != ipfnBin)  // if we're skipping, and it is not
         return Status::OK;                          // the \bin keyword, ignore it.
