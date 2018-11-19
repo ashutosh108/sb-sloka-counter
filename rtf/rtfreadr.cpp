@@ -27,8 +27,9 @@ public:
     // Isolate RTF keywords and send them to ParseRtfKeyword;
     // Push and pop state at the start and end of RTF groups;
     // Send text to ParseChar for further processing.
-    static Status RtfParse(FILE *fp);
+    Status RtfParse(FILE *fp);
 
+private:
     typedef enum { rdsNorm, rdsSkip } RDS;              // Rtf Destination State
     // What types of properties are there?
     typedef enum {ipropBold, ipropItalic, ipropUnderline, ipropLeftInd,
@@ -116,18 +117,18 @@ public:
                                 // character to print if kwd == kwdChar
     } SYM;
 
-    static int cGroup;
-    static bool fSkipDestIfUnk;
-    static long cbBin;
-    static long lParam;
-    static RtfParser::RDS rds;
-    static RtfParser::RIS ris;
+    int cGroup=0;
+    bool fSkipDestIfUnk=false;
+    long cbBin=0;
+    long lParam=0;
+    RDS rds{};
+    RIS ris{};
 
-    static RtfParser::CHP chp;
-    static RtfParser::PAP pap;
-    static RtfParser::SEP sep;
-    static RtfParser::DOP dop;
-    static RtfParser::SAVE *psave;
+    CHP chp{};
+    PAP pap{};
+    SEP sep{};
+    DOP dop{};
+    SAVE *psave{};
 
     // RTF parser tables
     // Property descriptions
@@ -137,18 +138,18 @@ public:
     static const RtfParser::SYM rgsymRtf[];
     static std::size_t isymMax;
 
-    static Status PushRtfState(void);
-    static Status PopRtfState(void);
-    static Status ParseRtfKeyword(FILE *fp);
-    static Status ParseChar(int c);
-    static Status TranslateKeyword(char *szKeyword, int param, bool fParam);
-    static Status PrintChar(int ch);
-    static Status EndGroupAction(RDS rds);
-    static Status ApplyPropChange(IPROP iprop, int val);
-    static Status ChangeDest(IDEST idest);
-    static Status ParseSpecialKeyword(IPFN ipfn);
-    static Status ParseSpecialProperty(IPROP iprop, int val);
-    static Status ParseHexByte(void);
+    Status PushRtfState(void);
+    Status PopRtfState(void);
+    Status ParseRtfKeyword(FILE *fp);
+    Status ParseChar(int c);
+    Status TranslateKeyword(char *szKeyword, int param, bool fParam);
+    Status PrintChar(int ch);
+    Status EndGroupAction(RDS rds);
+    Status ApplyPropChange(IPROP iprop, int val);
+    Status ChangeDest(IDEST idest);
+    Status ParseSpecialKeyword(IPFN ipfn);
+    Status ParseSpecialProperty(IPROP iprop, int val);
+    Status ParseHexByte(void);
 };
 
 // %%Function: main
@@ -157,7 +158,6 @@ public:
 int main()
 {
     FILE *fp;
-    Status ec;
 
     fp = fopen("test.rtf", "r");
     if (!fp)
@@ -165,26 +165,16 @@ int main()
         printf ("Can't open test file!\n");
         return 1;
     }
-    if ((ec = RtfParser::RtfParse(fp)) != Status::OK)
+
+    Status ec;
+    RtfParser p;
+    if ((ec = p.RtfParse(fp)) != Status::OK)
         printf("error %d parsing rtf\n", ec);
     else
         printf("Parsed RTF file OK\n");
     fclose(fp);
     return 0;
 }
-
-int RtfParser::cGroup;
-bool RtfParser::fSkipDestIfUnk;
-long RtfParser::cbBin;
-long RtfParser::lParam;
-RtfParser::RDS RtfParser::rds;
-RtfParser::RIS RtfParser::ris;
-
-RtfParser::CHP RtfParser::chp;
-RtfParser::PAP RtfParser::pap;
-RtfParser::SEP RtfParser::sep;
-RtfParser::DOP RtfParser::dop;
-RtfParser::SAVE * RtfParser::psave;
 
 Status RtfParser::RtfParse(FILE *fp)
 {
