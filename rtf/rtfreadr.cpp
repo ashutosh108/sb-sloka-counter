@@ -19,7 +19,16 @@ enum class Status {
     InvalidParam    = 9       // Invalid parameter
 };
 
-Status RtfParse(FILE *fp);
+class RtfParser {
+public:
+    // %%Function: RtfParse
+    //
+    // Step 1:
+    // Isolate RTF keywords and send them to ParseRtfKeyword;
+    // Push and pop state at the start and end of RTF groups;
+    // Send text to ParseChar for further processing.
+    static Status RtfParse(FILE *fp);
+};
 
 // %%Function: main
 //
@@ -35,7 +44,7 @@ int main()
         printf ("Can't open test file!\n");
         return 1;
     }
-    if ((ec = RtfParse(fp)) != Status::OK)
+    if ((ec = RtfParser::RtfParse(fp)) != Status::OK)
         printf("error %d parsing rtf\n", ec);
     else
         printf("Parsed RTF file OK\n");
@@ -156,14 +165,7 @@ SEP sep;
 DOP dop;
 SAVE *psave;
 
-// %%Function: RtfParse
-//
-// Step 1:
-// Isolate RTF keywords and send them to ParseRtfKeyword;
-// Push and pop state at the start and end of RTF groups;
-// Send text to ParseChar for further processing.
-
-Status RtfParse(FILE *fp)
+Status RtfParser::RtfParse(FILE *fp)
 {
     int ch;
     Status ec;
