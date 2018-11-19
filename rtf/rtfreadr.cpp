@@ -116,6 +116,19 @@ public:
                                 // character to print if kwd == kwdChar
     } SYM;
 
+    static int cGroup;
+    static bool fSkipDestIfUnk;
+    static long cbBin;
+    static long lParam;
+    static RtfParser::RDS rds;
+    static RtfParser::RIS ris;
+
+    static RtfParser::CHP chp;
+    static RtfParser::PAP pap;
+    static RtfParser::SEP sep;
+    static RtfParser::DOP dop;
+    static RtfParser::SAVE *psave;
+
     // RTF parser tables
     // Property descriptions
     static const RtfParser::PROP rgprop [RtfParser::ipropMax];
@@ -160,18 +173,18 @@ int main()
     return 0;
 }
 
-int cGroup;
-bool fSkipDestIfUnk;
-long cbBin;
-long lParam;
-RtfParser::RDS rds;
-RtfParser::RIS ris;
+int RtfParser::cGroup;
+bool RtfParser::fSkipDestIfUnk;
+long RtfParser::cbBin;
+long RtfParser::lParam;
+RtfParser::RDS RtfParser::rds;
+RtfParser::RIS RtfParser::ris;
 
-RtfParser::CHP chp;
-RtfParser::PAP pap;
-RtfParser::SEP sep;
-RtfParser::DOP dop;
-RtfParser::SAVE *psave;
+RtfParser::CHP RtfParser::chp;
+RtfParser::PAP RtfParser::pap;
+RtfParser::SEP RtfParser::sep;
+RtfParser::DOP RtfParser::dop;
+RtfParser::SAVE * RtfParser::psave;
 
 Status RtfParser::RtfParse(FILE *fp)
 {
