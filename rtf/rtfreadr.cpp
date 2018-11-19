@@ -5,6 +5,44 @@
 #include <cstdlib>
 #include <cstring>
 
+enum class Status {
+// RTF parser error codes
+    OK              = 0,      // Everything's fine!
+    StackUnderflow  = 1,      // Unmatched '}'
+    StackOverflow   = 2,      // Too many '{' – memory exhausted
+    UnmatchedBrace  = 3,      // RTF ended during an open group.
+    InvalidHex      = 4,      // invalid hex character found in data
+    BadTable        = 5,      // RTF table (sym or prop) not valid
+    Assertion       = 6,      // Assertion failure
+    EndOfFile       = 7,      // End of file reached while reading RTF
+    InvalidKeyword  = 8,      // Invalid keyword
+    InvalidParam    = 9       // Invalid parameter
+};
+
+Status RtfParse(FILE *fp);
+
+// %%Function: main
+//
+// Main loop. Initialize and parse RTF.
+int main()
+{
+    FILE *fp;
+    Status ec;
+
+    fp = fopen("test.rtf", "r");
+    if (!fp)
+    {
+        printf ("Can't open test file!\n");
+        return 1;
+    }
+    if ((ec = RtfParse(fp)) != Status::OK)
+        printf("error %d parsing rtf\n", ec);
+    else
+        printf("Parsed RTF file OK\n");
+    fclose(fp);
+    return 0;
+}
+
 typedef struct char_prop
 {
     char fBold;
@@ -91,22 +129,7 @@ typedef struct symbol
                             // character to print if kwd == kwdChar
 } SYM;
 
-enum class Status {
-// RTF parser error codes
-    OK              = 0,      // Everything's fine!
-    StackUnderflow  = 1,      // Unmatched '}'
-    StackOverflow   = 2,      // Too many '{' – memory exhausted
-    UnmatchedBrace  = 3,      // RTF ended during an open group.
-    InvalidHex      = 4,      // invalid hex character found in data
-    BadTable        = 5,      // RTF table (sym or prop) not valid
-    Assertion       = 6,      // Assertion failure
-    EndOfFile       = 7,      // End of file reached while reading RTF
-    InvalidKeyword  = 8,      // Invalid keyword
-    InvalidParam    = 9       // Invalid parameter
-};
-
 // RTF parser declarations
-Status RtfParse(FILE *fp);
 Status PushRtfState(void);
 Status PopRtfState(void);
 Status ParseRtfKeyword(FILE *fp);
@@ -132,28 +155,6 @@ PAP pap;
 SEP sep;
 DOP dop;
 SAVE *psave;
-
-// %%Function: main
-//
-// Main loop. Initialize and parse RTF.
-int main()
-{
-    FILE *fp;
-    Status ec;
-
-    fp = fopen("test.rtf", "r");
-    if (!fp)
-    {
-        printf ("Can't open test file!\n");
-        return 1;
-    }
-    if ((ec = RtfParse(fp)) != Status::OK)
-        printf("error %d parsing rtf\n", ec);
-    else
-        printf("Parsed RTF file OK\n");
-    fclose(fp);
-    return 0;
-}
 
 // %%Function: RtfParse
 //
