@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
+project(myproject CXX)
 if (CMAKE_VERSION VERSION_LESS "3.1")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -6,7 +7,6 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
 else()
   set(CMAKE_CXX_STANDARD 11)
 endif()
-project(myproject CXX)
 add_executable(rtfreadr rtf/rtfreadr.cpp)
 if(MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS) # for fopen()
@@ -32,7 +32,7 @@ else(MSVC)
         endif()
     endif()
     target_compile_options(rtfreadr PRIVATE -Wall -Wextra -Wshadow
-	-Werror
+        -Werror
         -Wnon-virtual-dtor -pedantic
         -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual
         -Wpedantic -Wconversion -Wsign-conversion

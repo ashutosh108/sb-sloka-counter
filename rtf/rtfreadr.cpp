@@ -30,83 +30,83 @@ public:
     Status RtfParse(FILE *fp);
 
 private:
-    typedef enum { rdsNorm, rdsSkip } RDS;              // Rtf Destination State
+    enum RDS { rdsNorm, rdsSkip };              // Rtf Destination State
     // What types of properties are there?
-    typedef enum {ipropBold, ipropItalic, ipropUnderline, ipropLeftInd,
+    enum IPROP {ipropBold, ipropItalic, ipropUnderline, ipropLeftInd,
                   ipropRightInd, ipropFirstInd, ipropCols, ipropPgnX,
                   ipropPgnY, ipropXaPage, ipropYaPage, ipropXaLeft,
                   ipropXaRight, ipropYaTop, ipropYaBottom, ipropPgnStart,
                   ipropSbk, ipropPgnFormat, ipropFacingp, ipropLandscape,
                   ipropJust, ipropPard, ipropPlain, ipropSectd,
-                  ipropMax } IPROP;
+                  ipropMax };
 
-    typedef enum {ipfnBin, ipfnHex, ipfnSkipDest } IPFN;
-    typedef enum {idestPict, idestSkip } IDEST;
+    enum IPFN {ipfnBin, ipfnHex, ipfnSkipDest };
+    enum IDEST {idestPict, idestSkip };
 
-    typedef struct char_prop
+    struct CHP
     {
-        char fBold;
-        char fUnderline;
-        char fItalic;
-    } CHP;                  // Character Properties
+        char fBold = false;
+        char fUnderline = false;
+        char fItalic = false;
+    };                  // Character Properties
 
-    typedef enum {justL, justR, justC, justF } JUST;
-    typedef struct para_prop
+    enum JUST {justL, justR, justC, justF };
+    struct PAP
     {
-        int xaLeft;                 // left indent in twips
-        int xaRight;                // right indent in twips
-        int xaFirst;                // first line indent in twips
-        JUST just;                  // justification
-    } PAP;                  // Paragraph Properties
+        int xaLeft=0;               // left indent in twips
+        int xaRight=0;              // right indent in twips
+        int xaFirst=0;              // first line indent in twips
+        JUST just=justL;            // justification
+    };                  // Paragraph Properties
 
-    typedef enum {sbkNon, sbkCol, sbkEvn, sbkOdd, sbkPg} SBK;
-    typedef enum {pgDec, pgURom, pgLRom, pgULtr, pgLLtr} PGN;
-    typedef struct sect_prop
+    enum SBK {sbkNon, sbkCol, sbkEvn, sbkOdd, sbkPg};
+    enum PGN {pgDec, pgURom, pgLRom, pgULtr, pgLLtr};
+    struct SEP
     {
-        int cCols;                  // number of columns
-        SBK sbk;                    // section break type
-        int xaPgn;                  // x position of page number in twips
-        int yaPgn;                  // y position of page number in twips
-        PGN pgnFormat;              // how the page number is formatted
-    } SEP;                  // Section Properties
-    typedef struct doc_prop
+        int cCols=1;                // number of columns
+        SBK sbk=sbkNon;             // section break type
+        int xaPgn=0;                // x position of page number in twips
+        int yaPgn=0;                // y position of page number in twips
+        PGN pgnFormat=pgDec;        // how the page number is formatted
+    };                  // Section Properties
+    struct DOP
     {
-        int xaPage;                 // page width in twips
-        int yaPage;                 // page height in twips
-        int xaLeft;                 // left margin in twips
-        int yaTop;                  // top margin in twips
-        int xaRight;                // right margin in twips
-        int yaBottom;               // bottom margin in twips
-        int pgnStart;               // starting page number in twips
-        char fFacingp;              // facing pages enabled?
-        char fLandscape;            // landscape or portrait?
-    } DOP;                  // Document Properties
+        int xaPage=0;               // page width in twips
+        int yaPage=0;               // page height in twips
+        int xaLeft=0;               // left margin in twips
+        int yaTop=0;                // top margin in twips
+        int xaRight=0;              // right margin in twips
+        int yaBottom=0;             // bottom margin in twips
+        int pgnStart=0;             // starting page number in twips
+        char fFacingp=false;        // facing pages enabled?
+        char fLandscape=false;      // landscape or portrait?
+    };                  // Document Properties
 
-    typedef enum { risNorm, risBin, risHex } RIS;       // Rtf Internal State
+    enum RIS { risNorm, risBin, risHex };       // Rtf Internal State
 
-    typedef struct save             // property save structure
+    struct SAVE             // property save structure
     {
-        struct save *pNext;         // next save
+        SAVE *pNext;         // next save
         CHP chp;
         PAP pap;
         SEP sep;
         DOP dop;
         RDS rds;
         RIS ris;
-    } SAVE;
+    };
 
-    typedef enum {actnSpec, actnByte, actnWord} ACTN;
-    typedef enum {propChp, propPap, propSep, propDop} PROPTYPE;
+    enum ACTN {actnSpec, actnByte, actnWord};
+    enum PROPTYPE {propChp, propPap, propSep, propDop};
 
-    typedef struct propmod
+    struct PROP
     {
         ACTN actn;              // size of value
         PROPTYPE prop;          // structure containing value
         int  offset;            // offset of value from base of structure
-    } PROP;
+    };
 
-    typedef enum {kwdChar, kwdDest, kwdProp, kwdSpec} KWD;
-    typedef struct symbol
+    enum KWD {kwdChar, kwdDest, kwdProp, kwdSpec};
+    struct SYM
     {
         const char *szKeyword;  // RTF keyword
         int  dflt;              // default value to use
@@ -115,7 +115,7 @@ private:
         int  idx;               // index into property table if kwd == kwdProp
                                 // index into destination table if kwd == kwdDest
                                 // character to print if kwd == kwdChar
-    } SYM;
+    };
 
     int cGroup=0;
     bool fSkipDestIfUnk=false;
