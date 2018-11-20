@@ -169,7 +169,7 @@ int main()
     Status ec;
     RtfParser p;
     if ((ec = p.RtfParse(fp)) != Status::OK)
-        printf("error %d parsing rtf\n", ec);
+        printf("error %d parsing rtf\n", static_cast<int>(ec));
     else
         printf("Parsed RTF file OK\n");
     fclose(fp);

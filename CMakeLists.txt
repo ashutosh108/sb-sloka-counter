@@ -19,12 +19,12 @@ else(MSVC)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         # GCC >= 7.0.0
         if (NOT(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 7.0.0))
-            target_compile_options(rtfreadr
+            target_compile_options(rtfreadr PRIVATE
                 -Wduplicated-branches
             )
         # GCC >= 6.0.0
         elseif (NOT(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 6.0.0))
-            target_compile_options(rtfreadr
+            target_compile_options(rtfreadr PRIVATE
                 -Wmisleading-indentation
                 -Wduplicated-cond
                 -Wnull-dereference
