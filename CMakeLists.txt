@@ -22,7 +22,7 @@ else()
         if (NOT(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.3))
             set(WARN_FLAGS ${WARN_FLAGS} -Wsign-conversion)
         # GCC >= 4.6
-        elseif (NOT(CMAKE_CSS_COMPILER_VERSION VERSION_LESS 4.6))
+        elseif (NOT(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6))
             set(WARN_FLAGS ${WARN_FLAGS} -Wdouble-promotion)
         # GCC >= 4.8
         elseif (NOT(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8))
