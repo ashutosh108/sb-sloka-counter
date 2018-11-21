@@ -10,14 +10,14 @@ else()
 endif()
 add_executable(rtfreadr rtf/rtfreadr.cpp)
 if(MSVC)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS) # for fopen()
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS) # for fopen()
     set(WARN_FLAGS ${WARN_FLAGS} /permissive- /W4
         /WX
         /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311
         /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826
         /w14905 /w14906 /w14928)
 else()
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # GCC >= 4.3
         if (NOT(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.3))
             set(WARN_FLAGS ${WARN_FLAGS} -Wsign-conversion)
