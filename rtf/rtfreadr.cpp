@@ -212,7 +212,6 @@ Status RtfParser::RtfParse(FILE *fp)
                     return ec;
                 break;
             case '\\':
-                FlushOutputString();
                 if ((ec = ParseRtfKeyword(fp)) != Status::OK)
                     return ec;
                 break;
@@ -616,6 +615,7 @@ Status RtfParser::TranslateKeyword(char *szKeyword, int param, bool fParam)
             rds = rdsSkip;          // skip the destination
                                     // else just discard it
         fSkipDestIfUnk = false;
+        FlushOutputString();
         return Status::OK;
     }
 
@@ -624,16 +624,19 @@ Status RtfParser::TranslateKeyword(char *szKeyword, int param, bool fParam)
     switch (rgsymRtf[isym].kwd)
     {
     case kwdProp:
+        FlushOutputString();
         if (rgsymRtf[isym].fPassDflt || !fParam)
             param = rgsymRtf[isym].dflt;
         return ApplyPropChange(static_cast<IPROP>(rgsymRtf[isym].idx), param);
     case kwdChar:
         return ParseChar(rgsymRtf[isym].idx);
     case kwdDest:
+        FlushOutputString();
         return ChangeDest(static_cast<IDEST>(rgsymRtf[isym].idx));
     case kwdSpec:
         return ParseSpecialKeyword(static_cast<IPFN>(rgsymRtf[isym].idx));
     default:
+        FlushOutputString();
         return Status::BadTable;
     }
 }
@@ -665,21 +668,26 @@ Status RtfParser::EndGroupAction(RDS/* rds*/)
 
 Status RtfParser::ParseSpecialKeyword(IPFN ipfn)
 {
-    if (rds == rdsSkip && ipfn != ipfnBin)  // if we're skipping, and it is not
+    if (rds == rdsSkip && ipfn != ipfnBin) { // if we're skipping, and it is not
+        FlushOutputString();
         return Status::OK;                          // the \bin keyword, ignore it.
+    }
     switch (ipfn)
     {
     case ipfnBin:
+        FlushOutputString();
         ris = risBin;
         cbBin = lParam;
         break;
     case ipfnSkipDest:
+        FlushOutputString();
         fSkipDestIfUnk = true;
         break;
     case ipfnHex:
         ris = risHex;
         break;
     default:
+        FlushOutputString();
         return Status::BadTable;
     }
     return Status::OK;
@@ -695,5 +703,5 @@ void RtfParser::FlushOutputString()
 
 void RtfParser::SendOutputString(std::string const & string)
 {
-    std::cout << '{' << string << '}';
+    std::cout << string;
 }
