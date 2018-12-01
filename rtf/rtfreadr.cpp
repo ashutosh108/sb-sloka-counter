@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <string>
 
 enum class Status {
 // RTF parser error codes
@@ -130,6 +132,8 @@ private:
     DOP dop{};
     SAVE *psave{};
 
+    std::string output_string;
+
     // RTF parser tables
     // Property descriptions
     static const RtfParser::PROP rgprop [RtfParser::ipropMax];
@@ -150,6 +154,8 @@ private:
     Status ParseSpecialKeyword(IPFN ipfn);
     Status ParseSpecialProperty(IPROP iprop, int val);
     Status ParseHexByte(void);
+    void FlushOutputString();
+    void SendOutputString(std::string const & string);
 };
 
 // %%Function: main
@@ -196,14 +202,17 @@ Status RtfParser::RtfParse(FILE *fp)
             switch (ch)
             {
             case '{':
+                FlushOutputString();
                 if ((ec = PushRtfState()) != Status::OK)
                     return ec;
                 break;
             case '}':
+                FlushOutputString();
                 if ((ec = PopRtfState()) != Status::OK)
                     return ec;
                 break;
             case '\\':
+                FlushOutputString();
                 if ((ec = ParseRtfKeyword(fp)) != Status::OK)
                     return ec;
                 break;
@@ -403,7 +412,7 @@ Status RtfParser::ParseChar(int ch)
 Status RtfParser::PrintChar(int ch)
 {
     // unfortunately, we do not do a whole lot here as far as layout goes...
-    putchar(ch);
+    output_string += static_cast<char>(ch);
     return Status::OK;
 }
 
@@ -674,4 +683,17 @@ Status RtfParser::ParseSpecialKeyword(IPFN ipfn)
         return Status::BadTable;
     }
     return Status::OK;
+}
+
+void RtfParser::FlushOutputString()
+{
+    if (!output_string.empty()) {
+        SendOutputString(output_string);
+        output_string = "";
+    }
+}
+
+void RtfParser::SendOutputString(std::string const & string)
+{
+    std::cout << '{' << string << '}';
 }
