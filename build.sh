@@ -1,6 +1,9 @@
 #!/bin/sh
 # try build on various platforms and compilers using docker
 
+# exit after first error
+set -e
+
 for image in \
 	ashutosh108/dev:ubuntu14.04-cmake2.8.12.2-gcc4.8.4 \
 	ashutosh108/dev:ubuntu16.04-cmake3.5.1-gcc5.4.0 \
