@@ -431,7 +431,7 @@ Status RtfParser<Outputter>::PrintChar(int ch)
 }
 
 template <class Outputter>
-typename const RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParser<Outputter>::ipropMax] = {
+const typename RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParser<Outputter>::ipropMax] = {
     actnByte,   propChp,    offsetof(CHP, fBold),       // ipropBold
     actnByte,   propChp,    offsetof(CHP, fItalic),     // ipropItalic
     actnByte,   propChp,    offsetof(CHP, fUnderline),  // ipropUnderline
@@ -459,7 +459,7 @@ typename const RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParse
 };
 
 template <class Outputter>
-typename const RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
+const typename RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
 //  keyword     dflt    fPassDflt  kwd         idx
     "b",        1,      false,     kwdProp,    ipropBold,
     "u",        1,      false,     kwdProp,    ipropUnderline,
