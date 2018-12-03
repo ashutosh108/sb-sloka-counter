@@ -21,6 +21,14 @@ enum class Status {
     InvalidParam    = 9       // Invalid parameter
 };
 
+class CoutOutputter {
+public:
+    void write(std::string const & string) {
+        std::cout << string;
+    }
+};
+
+template <class Outputter>
 class RtfParser {
 public:
     // %%Function: RtfParse
@@ -133,6 +141,7 @@ private:
     SAVE *psave{};
 
     std::string output_string;
+    Outputter outputter{};
 
     // RTF parser tables
     // Property descriptions
@@ -173,7 +182,7 @@ int main()
     }
 
     Status ec;
-    RtfParser p;
+    RtfParser<CoutOutputter> p;
     if ((ec = p.RtfParse(fp)) != Status::OK)
         printf("error %d parsing rtf\n", static_cast<int>(ec));
     else
@@ -182,7 +191,8 @@ int main()
     return 0;
 }
 
-Status RtfParser::RtfParse(FILE *fp)
+template <class Outputter>
+Status RtfParser<Outputter>::RtfParse(FILE *fp)
 {
     int ch;
     Status ec;
@@ -271,7 +281,8 @@ Status RtfParser::RtfParse(FILE *fp)
 //
 // Save relevant info on a linked list of SAVE structures.
 
-Status RtfParser::PushRtfState(void)
+template <class Outputter>
+Status RtfParser<Outputter>::PushRtfState(void)
 {
     SAVE *psaveNew = static_cast<SAVE *>(malloc(sizeof(SAVE)));
     if (!psaveNew)
@@ -296,7 +307,8 @@ Status RtfParser::PushRtfState(void)
 // call EndGroupAction.
 // Always restore relevant info from the top of the SAVE list.
 
-Status RtfParser::PopRtfState(void)
+template <class Outputter>
+Status RtfParser<Outputter>::PopRtfState(void)
 {
     SAVE *psaveOld;
     Status ec;
@@ -329,7 +341,8 @@ Status RtfParser::PopRtfState(void)
 // get a control word (and its associated value) and
 // call TranslateKeyword to dispatch the control.
 
-Status RtfParser::ParseRtfKeyword(FILE *fp)
+template <class Outputter>
+Status RtfParser<Outputter>::ParseRtfKeyword(FILE *fp)
 {
     int ch;
     char fParam = false;
@@ -385,7 +398,8 @@ Status RtfParser::ParseRtfKeyword(FILE *fp)
 //
 // Route the character to the appropriate destination stream.
 
-Status RtfParser::ParseChar(int ch)
+template <class Outputter>
+Status RtfParser<Outputter>::ParseChar(int ch)
 {
     if (ris == risBin && --cbBin <= 0)
         ris = risNorm;
@@ -408,14 +422,16 @@ Status RtfParser::ParseChar(int ch)
 //
 // Send a character to the output file.
 
-Status RtfParser::PrintChar(int ch)
+template <class Outputter>
+Status RtfParser<Outputter>::PrintChar(int ch)
 {
     // unfortunately, we do not do a whole lot here as far as layout goes...
     output_string += static_cast<char>(ch);
     return Status::OK;
 }
 
-const RtfParser::PROP RtfParser::rgprop [RtfParser::ipropMax] = {
+template <class Outputter>
+typename const RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParser<Outputter>::ipropMax] = {
     actnByte,   propChp,    offsetof(CHP, fBold),       // ipropBold
     actnByte,   propChp,    offsetof(CHP, fItalic),     // ipropItalic
     actnByte,   propChp,    offsetof(CHP, fUnderline),  // ipropUnderline
@@ -442,7 +458,8 @@ const RtfParser::PROP RtfParser::rgprop [RtfParser::ipropMax] = {
     actnSpec,   propSep,    0,                          // ipropSectd
 };
 
-const RtfParser::SYM RtfParser::rgsymRtf[] = {
+template <class Outputter>
+typename const RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
 //  keyword     dflt    fPassDflt  kwd         idx
     "b",        1,      false,     kwdProp,    ipropBold,
     "u",        1,      false,     kwdProp,    ipropUnderline,
@@ -523,12 +540,14 @@ const RtfParser::SYM RtfParser::rgsymRtf[] = {
     "\\",       0,      false,     kwdChar,    '\\'
 };
 
-std::size_t RtfParser::isymMax = sizeof(rgsymRtf) / sizeof(RtfParser::SYM);
+template <class Outputter>
+typename std::size_t RtfParser<Outputter>::isymMax = sizeof(rgsymRtf) / sizeof(RtfParser<Outputter>::SYM);
 
 // %%Function: ApplyPropChange
 // Set the property identified by _iprop_ to the value _val_.
 
-Status RtfParser::ApplyPropChange(IPROP iprop, int val)
+template <class Outputter>
+Status RtfParser<Outputter>::ApplyPropChange(IPROP iprop, int val)
 {
     unsigned char *pb = nullptr;
     if (rds == rdsSkip)                 // If we're skipping text,
@@ -574,7 +593,8 @@ Status RtfParser::ApplyPropChange(IPROP iprop, int val)
 // %%Function: ParseSpecialProperty
 // Set a property that requires code to evaluate.
 
-Status RtfParser::ParseSpecialProperty(IPROP iprop, int/* val*/)
+template <class Outputter>
+Status RtfParser<Outputter>::ParseSpecialProperty(IPROP iprop, int/* val*/)
 {
     switch (iprop)
     {
@@ -601,7 +621,8 @@ Status RtfParser::ParseSpecialProperty(IPROP iprop, int/* val*/)
 // fParam:      true if the control had a parameter; (that is, if param is valid)
 //              false if it did not.
 
-Status RtfParser::TranslateKeyword(char *szKeyword, int param, bool fParam)
+template <class Outputter>
+Status RtfParser<Outputter>::TranslateKeyword(char *szKeyword, int param, bool fParam)
 {
     std::size_t isym;
 
@@ -645,7 +666,8 @@ Status RtfParser::TranslateKeyword(char *szKeyword, int param, bool fParam)
 // Change to the destination specified by idest.
 // There's usually more to do here than this...
 
-Status RtfParser::ChangeDest(IDEST/* idest*/)
+template <class Outputter>
+Status RtfParser<Outputter>::ChangeDest(IDEST/* idest*/)
 {
     if (rds == rdsSkip)             // if we're skipping text,
         return Status::OK;                // Do not do anything
@@ -658,7 +680,8 @@ Status RtfParser::ChangeDest(IDEST/* idest*/)
 // The destination specified by rds is coming to a close.
 // If there’s any cleanup that needs to be done, do it now.
 
-Status RtfParser::EndGroupAction(RDS/* rds*/)
+template <class Outputter>
+Status RtfParser<Outputter>::EndGroupAction(RDS/* rds*/)
 {
     return Status::OK;
 }
@@ -666,7 +689,8 @@ Status RtfParser::EndGroupAction(RDS/* rds*/)
 // %%Function: ParseSpecialKeyword
 // Evaluate an RTF control that needs special processing.
 
-Status RtfParser::ParseSpecialKeyword(IPFN ipfn)
+template <class Outputter>
+Status RtfParser<Outputter>::ParseSpecialKeyword(IPFN ipfn)
 {
     if (rds == rdsSkip && ipfn != ipfnBin) { // if we're skipping, and it is not
         FlushOutputString();
@@ -693,7 +717,8 @@ Status RtfParser::ParseSpecialKeyword(IPFN ipfn)
     return Status::OK;
 }
 
-void RtfParser::FlushOutputString()
+template <class Outputter>
+void RtfParser<Outputter>::FlushOutputString()
 {
     if (!output_string.empty()) {
         SendOutputString(output_string);
@@ -701,7 +726,8 @@ void RtfParser::FlushOutputString()
     }
 }
 
-void RtfParser::SendOutputString(std::string const & string)
+template <class Outputter>
+void RtfParser<Outputter>::SendOutputString(std::string const & string)
 {
-    std::cout << string;
+    outputter.write(string);
 }
