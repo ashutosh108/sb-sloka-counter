@@ -9,6 +9,8 @@ else()
   set(CMAKE_CXX_STANDARD 11)
 endif()
 add_executable(rtfreadr rtf/rtfreadr.cpp rtf/rtfparser.h)
+add_executable(sb-sloka-counter sb-sloka-counter.cpp rtf/rtfparser.h)
+target_include_directories(sb-sloka-counter PRIVATE rtf)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS) # for fopen()
     set(WARN_FLAGS ${WARN_FLAGS} /permissive- /W4
