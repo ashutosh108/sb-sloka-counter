@@ -25,12 +25,12 @@ enum class Status {
 };
 
 struct font {
-    explicit font(int font) : font_(font){}
+    explicit font(int val) : val_(val){}
     explicit operator int() const noexcept {
-        return font_;
+        return val_;
     }
 private:
-    int font_;
+    int val_;
 };
 
 struct CHP
@@ -38,7 +38,7 @@ struct CHP
     char fBold = false;
     char fUnderline = false;
     char fItalic = false;
-    font font{0};
+    font cur_font{0};
 };                  // Character Properties
 
 template <class Outputter>
@@ -439,7 +439,7 @@ const typename RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParse
     actnSpec,   propPap,    0,                          // ipropPard
     actnSpec,   propChp,    0,                          // ipropPlain
     actnSpec,   propSep,    0,                          // ipropSectd
-    actnWord,   propChp,    offsetof(CHP, font),        // ipropFont
+    actnWord,   propChp,    offsetof(CHP, cur_font),    // ipropFont
 };
 
 template <class Outputter>
