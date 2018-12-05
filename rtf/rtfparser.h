@@ -38,6 +38,7 @@ struct CHP
     char fBold = false;
     char fUnderline = false;
     char fItalic = false;
+    char hidden = false;
     font cur_font{0};
 };                  // Character Properties
 
@@ -62,6 +63,7 @@ private:
                   ipropSbk, ipropPgnFormat, ipropFacingp, ipropLandscape,
                   ipropJust, ipropPard, ipropPlain, ipropSectd,
                   ipropFont,
+                  ipropHidden,
                   ipropMax };
 
     enum IPFN {ipfnBin, ipfnHex, ipfnSkipDest };
@@ -440,12 +442,14 @@ const typename RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParse
     actnSpec,   propChp,    0,                          // ipropPlain
     actnSpec,   propSep,    0,                          // ipropSectd
     actnWord,   propChp,    offsetof(CHP, cur_font),    // ipropFont
+    actnByte,   propChp,    offsetof(CHP, hidden),      // ipropBold
 };
 
 template <class Outputter>
 const typename RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
 //  keyword     dflt    fPassDflt  kwd         idx
     "b",        1,      false,     kwdProp,    ipropBold,
+    "v",        1,      false,     kwdProp,    ipropHidden,
     "u",        1,      false,     kwdProp,    ipropUnderline,
     "i",        1,      false,     kwdProp,    ipropItalic,
     "f",        0,      false,     kwdProp,    ipropFont,
