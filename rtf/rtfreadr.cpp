@@ -21,12 +21,22 @@ enum class Status {
     InvalidParam    = 9       // Invalid parameter
 };
 
-class CoutOutputter {
-public:
-    void write(std::string const & string) {
-        std::cout << string;
+struct font {
+    explicit font(int font) : font_(font){}
+    explicit operator int() const noexcept {
+        return font_;
     }
+private:
+    int font_;
 };
+
+struct CHP
+{
+    char fBold = false;
+    char fUnderline = false;
+    char fItalic = false;
+    font font{0};
+};                  // Character Properties
 
 template <class Outputter>
 class RtfParser {
@@ -48,17 +58,11 @@ private:
                   ipropXaRight, ipropYaTop, ipropYaBottom, ipropPgnStart,
                   ipropSbk, ipropPgnFormat, ipropFacingp, ipropLandscape,
                   ipropJust, ipropPard, ipropPlain, ipropSectd,
+                  ipropFont,
                   ipropMax };
 
     enum IPFN {ipfnBin, ipfnHex, ipfnSkipDest };
     enum IDEST {idestPict, idestSkip };
-
-    struct CHP
-    {
-        char fBold = false;
-        char fUnderline = false;
-        char fItalic = false;
-    };                  // Character Properties
 
     enum JUST {justL, justR, justC, justF };
     struct PAP
@@ -165,6 +169,13 @@ private:
     Status ParseHexByte(void);
     void FlushOutputString();
     void SendOutputString(std::string const & string);
+};
+
+class CoutOutputter {
+public:
+    void write(std::string const & string, CHP const & /*chp*/) {
+        std::cout << string;
+    }
 };
 
 // %%Function: main
@@ -456,6 +467,7 @@ const typename RtfParser<Outputter>::PROP RtfParser<Outputter>::rgprop [RtfParse
     actnSpec,   propPap,    0,                          // ipropPard
     actnSpec,   propChp,    0,                          // ipropPlain
     actnSpec,   propSep,    0,                          // ipropSectd
+    actnWord,   propChp,    offsetof(CHP, font),        // ipropFont
 };
 
 template <class Outputter>
@@ -464,6 +476,7 @@ const typename RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
     "b",        1,      false,     kwdProp,    ipropBold,
     "u",        1,      false,     kwdProp,    ipropUnderline,
     "i",        1,      false,     kwdProp,    ipropItalic,
+    "f",        0,      false,     kwdProp,    ipropFont,
     "li",       0,      false,     kwdProp,    ipropLeftInd,
     "ri",       0,      false,     kwdProp,    ipropRightInd,
     "fi",       0,      false,     kwdProp,    ipropFirstInd,
@@ -729,5 +742,5 @@ void RtfParser<Outputter>::FlushOutputString()
 template <class Outputter>
 void RtfParser<Outputter>::SendOutputString(std::string const & string)
 {
-    outputter.write(string);
+    outputter.write(string, chp);
 }
