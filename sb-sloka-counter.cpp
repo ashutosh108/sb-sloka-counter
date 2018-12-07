@@ -130,6 +130,34 @@ private:
         return (line == "SYNONYMS\n");
     }
 
+    std::string balaram_font_to_unicode(std::string const & s) {
+        std::string u;
+        for (auto c: s) {
+            switch (static_cast<unsigned char>(c)) {
+                case 0x92: u += "'"; break;
+                case 0x97: u += "—"; break;
+                case 0xe0: u += "ṁ"; break;
+                case 0xe4: u += "ā"; break;
+                case 0xe5: u += "ṛ"; break;
+                case 0xe7: u += "ś"; break;
+                case 0xe8: u += "ṝ"; break;
+                case 0xe9: u += "ī"; break;
+                case 0xeb: u += "ṇ"; break;
+                case 0xec: u += "ṅ"; break;
+                case 0xef: u += "ñ"; break;
+                case 0xf1: u += "ṣ"; break;
+                case 0xf2: u += "ḍ"; break;
+                case 0xf6: u += "ṭ"; break;
+                case 0xf9: u += "ḥ"; break;
+                case 0xfb: u += "ḻ"; break;
+                case 0xfc: u += "ū"; break;
+                case 0xff: u += "ḷ"; break;
+                default: u += c;
+            }
+        }
+        return u;
+    }
+
     void parse_verse_line(std::string const & line) {
         // we can assume verse_range is not empty
 
@@ -140,7 +168,7 @@ private:
         }
 
         if (line == "TEXT\n") return;
-        std::cout << verse_range << ": " << line;
+        std::cout << verse_range << ": " << balaram_font_to_unicode(line);
         auto size = line.size();
         if (size >= 1 && line[size-1] != '\n') {
             std::cout << '\n';
