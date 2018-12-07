@@ -4,7 +4,87 @@
 #include <stdexcept>
 #include "rtfparser.h"
 
-void parse_line(std::string const & line, CHP const & chp);
+class VerseRange {
+public:
+    VerseRange() = default;
+    void start_text_range(std::string const & text_first, std::string const & text_last="") {
+        text_first_ = text_first;
+        text_last_ = !text_last.empty() ? text_last : text_first;
+        check_numbers();
+    }
+
+    void start_chapter(std::string const & canto, std::string const & chapter) {
+        canto_ = canto;
+        chapter_ = chapter;
+    }
+
+    void clear() {
+        text_first_ = ""; text_last_ = "";
+    }
+    bool empty() {
+        return text_first_.empty();
+    }
+    void error(char const * msg) {
+        std::cerr << msg << ": " << canto_ << '.' << chapter_ << '.' << text_first_ << '-' << text_last_
+            << " (previous: " << prev_canto << '.' << prev_chapter << '.' << prev_text << ")\n";
+        std::exit(1);
+    }
+
+    int verse_num(std::string const & s) {
+        return atoi(s.c_str());
+    }
+
+    void check_numbers() {
+        if (canto_ != prev_canto) {
+            if (verse_num(canto_) != verse_num(prev_canto)+1) {
+                error("unexpected canto");
+            }
+            if (chapter_ != "1") {
+                error("unexpected chapter");
+            }
+            if (text_first_ != "1") {
+                error("unexpected text number(1)");
+            }
+        } else if (chapter_ != prev_chapter) {
+            if (verse_num(chapter_) != verse_num(prev_chapter)+1) {
+                error("unexpected chapter");
+            }
+            if (text_first_ != "1") {
+                error("unexpected text number(2)");
+            }
+        } else if (verse_num(text_first_) != verse_num(prev_text)+1) {
+            if (canto_ == "4" && chapter_ == "29" && text_first_ == "1a" && prev_text == "85") {
+                // it's OK, no error, just weird numbering in 4.29.85 => 4.29.1a-2a
+            } else if (canto_ == "4" && chapter_ == "29" && text_first_ == "1b" && prev_text == "2a") {
+                // it's OK, no error, just weird numbering in 4.29.1a-2a => 4.29.1b
+            } else {
+                error("unexpected text number(3)");
+            }
+        }
+        if (verse_num(text_last_) < verse_num(text_first_)) {
+            error("unexpected text range");
+        }
+        prev_canto = canto_;
+        prev_chapter = chapter_;
+        prev_text = text_last_;
+    }
+
+private:
+    std::string canto_, chapter_, text_first_, text_last_;
+    std::string prev_canto = "";
+    std::string prev_chapter = "";
+    std::string prev_text = "";
+
+    friend std::ostream & operator << (std::ostream & stream, VerseRange & r);
+};
+
+std::ostream & operator << (std::ostream & stream, VerseRange & r) {
+    stream << r.canto_ << '.' << r.chapter_ << '.' << r.text_first_;
+    if (r.text_last_ != r.text_first_) {
+        stream << '-' << r.text_last_;
+    }
+    return stream;
+}
 
 class SbSlokaCounter {
 public:
@@ -12,81 +92,72 @@ public:
         if (int(chp.cur_font) != 0) return;
         parse_line(string, chp);
     }
-};
 
-bool starts_with(std::string const & s, std::string const & with) {
-    return (s.compare(0, with.size(), with) == 0);
-}
+private:
+    VerseRange verse_range;
 
-void error(char const * msg, int canto, int chapter, int text,
-    int last_canto, int last_chapter, int last_text) {
-    std::cerr << msg << ": " << canto << '.' << chapter << '.' << text
-        << " (previous: " << last_canto << '.' << last_chapter << '.' << last_text << ")\n";
-    std::exit(1);
-}
-
-void check_verse_range_numbers(int canto, int chapter, int text) {
-    static int last_canto = 0;
-    static int last_chapter = 0;
-    static int last_text = 0;
-    if (canto != last_canto) {
-        if (canto != last_canto+1) {
-            error("unexpected canto", canto, chapter, text, last_canto, last_chapter, last_text);
-        }
-        if (chapter != 1) {
-            error("unexpected chapter", canto, chapter, text, last_canto, last_chapter, last_text);
-        }
-        if (text != 1) {
-            error("unexpected text number", canto, chapter, text, last_canto, last_chapter, last_text);
-        }
-    } else if (chapter != last_chapter) {
-        if (chapter != last_chapter+1) {
-            error("unexpected chapter", canto, chapter, text, last_canto, last_chapter, last_text);
-        }
-        if (text != 1) {
-            error("unexpected text number", canto, chapter, text, last_canto, last_chapter, last_text);
-        }
-    } else if (text != last_text+1) {
-        error("unexpected text number", canto, chapter, text, last_canto, last_chapter, last_text);
-    }
-    last_canto = canto;
-    last_chapter = chapter;
-    last_text = text;
-}
-
-void parse_line(std::string const & line, CHP const & chp) {
-    static std::string verse_range;
-    if (verse_range.empty()) {
-        // we only recognize "SB x.y.z" in the hidden text parts
-        if (!chp.hidden) {
-            return;
-        }
-        static std::regex r(R"regex(^SB ((\d+).(\d+).(\d+)))regex");
+    bool check_for_verse_start(std::string const & line) {
+        static std::regex r(R"re(^TEXTS? (\d+[ab]?)(?:[-\x96]{1,2}(\d+[ab]?))?\n?$)re");
         std::smatch match;
         if (std::regex_search(line, match, r)) {
-            //std::cout << "match: " << match.str(1) << '\n';
-            verse_range = match.str(1);
-            int canto = std::stoi(match.str(2));
-            int chapter = std::stoi(match.str(3));
-            int text = std::stoi(match.str(4));
+            verse_range.start_text_range(match.str(1), match.str(2));
+            return true;
+        }
+        return false;
+    }
 
-            check_verse_range_numbers(canto, chapter, text);
-            return;
+    void show_matches(std::smatch const & m) {
+        for (std::size_t n=0; n < m.size(); ++n) {
+            std::cout << " m[" << n << "]='" << m.str(n) << "'\n";
+        }
+        std::cout << "suffix='" << m.suffix().str() << "'\n";
+    }
+
+    bool check_for_chapter_start(std::string const & line) {
+        static std::regex r(R"re(^SB (\d+).(\d+):)re");
+        std::smatch match;
+
+        if (std::regex_search(line, match, r)) {
+            //show_matches(match);
+            verse_range.start_chapter(match.str(1), match.str(2));
+            return true;
         }
         //std::cout << "no match: " << line;
-        return;
+        return false;
     }
 
-    // verse range is not empty
+    bool check_verse_end(std::string const & line) {
+        return (line == "SYNONYMS\n");
+    }
 
-    if (line == "SYNONYMS\n") {
-            verse_range = "";
+    void parse_verse_line(std::string const & line) {
+        // we can assume verse_range is not empty
+
+        if (check_verse_end(line)) {
+            verse_range.clear();
             std::cout << std::flush;
             return;
+        }
+
+        if (line == "TEXT\n") return;
+        std::cout << verse_range << ": " << line;
+        auto size = line.size();
+        if (size >= 1 && line[size-1] != '\n') {
+            std::cout << '\n';
+        }
     }
-    if (starts_with(line, "TEXT")) return; // skip lines like "TEXT 3" and "TEXT"
-    std::cout << verse_range << ": " << line;
-}
+
+    void parse_line(std::string const & line, CHP const & /*chp*/) {
+        if (verse_range.empty()) {
+            if (check_for_verse_start(line)) return;
+            if (check_for_chapter_start(line)) return;
+            return;
+        }
+
+        parse_verse_line(line);
+    }
+
+};
 
 int main() {
     FILE *f = fopen("sb.rtf", "r");
