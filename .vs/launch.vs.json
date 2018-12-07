@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "sb-sloka-counter.exe",
+      "name": "sb-sloka-counter.exe",
+      "currentDir": "${workspaceRoot}"
+    }
+  ]
+}
