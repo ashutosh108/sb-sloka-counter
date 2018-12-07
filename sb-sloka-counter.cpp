@@ -86,6 +86,9 @@ std::ostream & operator << (std::ostream & stream, VerseRange & r) {
     return stream;
 }
 
+int total_syllables=0;
+int total_syllables_no_uvaca=0;
+
 class SbSlokaCounter {
 public:
     void write(std::string const & string, CHP const & chp) {
@@ -158,9 +161,59 @@ private:
         return u;
     }
 
-    void parse_verse_line(std::string const & line) {
-        // we can assume verse_range is not empty
+    bool ends_with(std::string const & subject, std::string const & with) {
+        auto subject_size = subject.size();
+        auto with_size = with.size();
+        if (subject_size < with_size) return false;
+        auto start = subject_size - with_size;
+        return (subject.compare(start, with_size, with) == 0);
+    }
 
+    // true if this is "... uvaaca" line
+    bool uvaca(std::string const & line) {
+        static std::vector<std::string> uvacas = {
+            "ov\xe4" "ca", // for rajovaaca, brahmovaaca, etc.
+            " uv\xe4" "ca", // for generic singular "xxx uvaaca"
+            " \xfc" "cu\xf9", // for generic plural "xxx uucuH"
+        };
+        return std::any_of(uvacas.begin(), uvacas.end(),
+            [&](std::string const & u) { return ends_with(line, u); });
+        //return ends_with(s, uvacas[0]) || ends_with(s, uvacas[1]);
+    }
+
+    int syllables(std::string const & s) {
+        int syllables_count = 0;
+        auto size = s.size();
+        for (unsigned i=0; i<size; ++i) {
+            switch (static_cast<unsigned char>(s[i])) {
+                // a is handled below because of ai and au
+                case 0xe4: // aa
+                case 'i':  // i
+                case 0xe9: // ii
+                case 'u':  // u
+                case 0xfc: // uu
+                case 0xe5: // R
+                case 0xe8: // RR
+                case 0xff: // L
+                // missing in source encoding: LL
+                case 'e':  // e
+                case 'o':  // o
+                    ++syllables_count;
+                    break;
+                case 'a':  // a
+                    if (i+1 < size && (s[i+1] == 'i' || s[i+1] == 'u')) {
+                        ++i;
+                    }
+                    ++syllables_count;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return syllables_count;
+    }
+
+    void parse_verse_line(std::string const & line) {
         if (check_verse_end(line)) {
             verse_range.clear();
             std::cout << std::flush;
@@ -168,11 +221,25 @@ private:
         }
 
         if (line == "TEXT\n") return;
-        std::cout << verse_range << ": " << balaram_font_to_unicode(line);
-        auto size = line.size();
-        if (size >= 1 && line[size-1] != '\n') {
-            std::cout << '\n';
+
+        std::string our_line = line;
+        // trim tailing newline for unification
+        auto size = our_line.size();
+        if (size >= 1 && our_line[size-1] == '\n') {
+            our_line.resize(size-1);
         }
+
+        auto syllables_count = syllables(our_line);
+        total_syllables += syllables_count;
+
+        bool is_uvaca = uvaca(our_line);
+        if (!is_uvaca) {
+            total_syllables_no_uvaca += syllables_count;
+        }
+
+        std::cout
+            << verse_range << '(' << syllables_count << (is_uvaca ? "'" : "")
+            << "): " << balaram_font_to_unicode(our_line) << '\n';
     }
 
     void parse_line(std::string const & line, CHP const & /*chp*/) {
@@ -199,5 +266,8 @@ int main() {
     if (ec != Status::OK) {
         fprintf(stderr, "error %d parsing RTF\n", int(ec));
     }
+
+    std::cout << "total syllables: " << total_syllables << '\n';
+    std::cout << "total syllables (no uvaaca): " << total_syllables_no_uvaca << '\n';
     fclose(f);
 }
