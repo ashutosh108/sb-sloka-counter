@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <stdexcept>
 #include "rtfparser.h"
@@ -69,6 +70,14 @@ public:
         prev_text = text_last_;
     }
 
+    std::string canto() {
+        return canto_;
+    }
+
+    std::string chapter() {
+        return chapter_;
+    }
+
 private:
     std::string canto_, chapter_, text_first_, text_last_;
     std::string prev_canto = "";
@@ -88,6 +97,7 @@ std::ostream & operator << (std::ostream & stream, VerseRange & r) {
 
 int total_syllables=0;
 int total_syllables_no_uvaca=0;
+std::map<std::string, int> total_by_chapter;
 
 class SbSlokaCounter {
 public:
@@ -232,6 +242,13 @@ private:
         auto syllables_count = syllables(our_line);
         total_syllables += syllables_count;
 
+        std::string canto_padded = (verse_range.canto().size() < 2 ? "0" : "") + verse_range.canto();
+        std::string chapter_padded = (verse_range.chapter().size() < 2 ? "0" : "") + verse_range.chapter();
+        std::string canto_chapter = canto_padded + "." + chapter_padded;
+        std::string canto_dot_x = canto_padded + ".x";
+        total_by_chapter[canto_chapter] += syllables_count;
+        total_by_chapter[canto_dot_x] += syllables_count;
+
         bool is_uvaca = uvaca(our_line);
         if (!is_uvaca) {
             total_syllables_no_uvaca += syllables_count;
@@ -265,6 +282,10 @@ int main() {
     Status ec = p.RtfParse(f);
     if (ec != Status::OK) {
         fprintf(stderr, "error %d parsing RTF\n", int(ec));
+    }
+
+    for (auto & pair: total_by_chapter) {
+        std::cout << "chapter " << pair.first << ": " << pair.second << '\n';
     }
 
     std::cout << "total syllables: " << total_syllables << '\n';
