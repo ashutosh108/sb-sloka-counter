@@ -14,9 +14,9 @@ public:
         check_numbers();
     }
 
-    void start_chapter(std::string const & canto, std::string const & chapter) {
-        canto_ = canto;
-        chapter_ = chapter;
+    void start_chapter(std::string const & new_canto, std::string const & new_chapter) {
+        canto_ = new_canto;
+        chapter_ = new_chapter;
     }
 
     void clear() {
