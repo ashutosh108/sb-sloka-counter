@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <regex>
 
 class SlokaCounter {
@@ -19,8 +20,8 @@ public:
 private:
     std::string itx_to_unicode(std::string const &s) {
         std::string u;
-        unsigned size = s.size();
-        for (unsigned i=0; i < size; ++i) {
+        auto size = s.size();
+        for (decltype(size) i=0; i < size; ++i) {
             switch (static_cast<unsigned char>(s[i])) {
                 case 'M': u += "ṁ"; break;
                 case 'A': u += "ā"; break;
