@@ -485,6 +485,7 @@ const typename RtfParser<Outputter>::SYM RtfParser<Outputter>::rgsymRtf[] = {
     "par",      0,      false,     kwdChar,    0x0a,
     "\0x0a",    0,      false,     kwdChar,    0x0a,
     "\0x0d",    0,      false,     kwdChar,    0x0a,
+    "line",     0,      false,     kwdChar,    0x0a,
     "tab",      0,      false,     kwdChar,    0x09,
     "ldblquote",0,      false,     kwdChar,    0x201c,
     "rdblquote",0,      false,     kwdChar,    0x201d,
