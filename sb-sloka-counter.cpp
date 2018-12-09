@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <map>
@@ -103,14 +104,20 @@ class SbSlokaCounter {
 public:
     void write(std::string const & string, CHP const & chp) {
         if (int(chp.cur_font) != 0) return;
-        parse_line(string, chp);
+        cur_line += string;
+        std::string::size_type pos;
+        while ((pos=cur_line.find('\n')) != std::string::npos) {
+            parse_line(cur_line.substr(0, pos+1), chp);
+            cur_line = cur_line.substr(pos+1);
+        }
     }
 
 private:
     VerseRange verse_range;
+    std::string cur_line;
 
     bool check_for_verse_start(std::string const & line) {
-        static std::regex r(R"re(^TEXTS? (\d+[ab]?)(?:[-\x96]{1,2}(\d+[ab]?))?\n?$)re");
+        static std::regex r(R"re(^TEXTS? (\d+[ab]?)(?:[-\x96]{1,2}(\d+[ab]?))?\n*$)re");
         std::smatch match;
         if (std::regex_search(line, match, r)) {
             verse_range.start_text_range(match.str(1), match.str(2));
@@ -237,6 +244,11 @@ private:
         auto size = our_line.size();
         if (size >= 1 && our_line[size-1] == '\n') {
             our_line.resize(size-1);
+        }
+
+        // skip all-whitespace lines
+        if (std::all_of(our_line.begin(), our_line.end(), [](char c){ return std::isspace(c);})) {
+            return;
         }
 
         auto syllables_count = syllables(our_line);
